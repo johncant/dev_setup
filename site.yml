@@ -1,0 +1,40 @@
+---
+- hosts: localhost
+  connection: local
+  become: false
+  tasks:
+    - name: Get user info
+      set_fact:
+        user_home_dir: "{{ ansible_env.HOME }}"
+        user_name: "{{ ansible_user_id }}"
+
+# Install useful system deps
+- hosts: localhost
+  connection: local
+  become: true
+  become_user: root
+  vars:
+    allow_corporate_mitm_attack: false
+    allow_corporate_mitm_attack_legitimate_google_ca_cert_fingerprints:
+      - "sha256 Fingerprint=BF:65:26:40:A4:1B:39:0F:68:D2:7F:DA:8A:9B:03:1D:67:EA:6F:78:A6:5A:3C:C5:57:50:DA:38:E4:6B:D6:A5"
+    allow_corporate_mitm_attack_corporate_ca_cert_fingerprints:
+      - "sha256 Fingerprint=01:D5:DE:6E:B5:33:00:EA:20:55:AF:F1:F2:CA:3C:5D:BB:84:D9:6F:A8:A4:CC:58:00:63:CE:AB:A4:D8:57:A6"
+    allow_corporate_mitm_attack_user_home_dir: "{{ user_home_dir }}"
+  roles:
+    - role: wsl_dns_fix
+    - role: system_dependencies
+    - role: allow_corporate_mitm_attack
+      when: allow_corporate_mitm_attack
+    - role: docker
+
+- hosts: localhost
+  become: false
+  become_user: root
+  vars:
+    pyenv_user_home_dir: "{{ user_home_dir }}"
+    spacevim_user_home_dir: "{{ user_home_dir }}"
+    docker_user: "{{ user_name }}"
+  connection: local
+  roles:
+    - role: pyenv
+    - role: spacevim

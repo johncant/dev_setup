@@ -1,0 +1,16 @@
+---
+
+  - apt:
+      pkg:
+        - vim
+        - git
+        - htop
+        - nmap
+        - nethogs
+        - dnsutils
+        - build-essential
+        - iotop
+        - ncdu
+        - neovim
+        - ripgrep
+        - zip

@@ -1,0 +1,62 @@
+---
+
+- name: Packages
+  apt:
+    pkg:
+      - openssl
+
+- name: Get CA cert
+  shell: openssl s_client -showcerts google.com:443 < /dev/null | sed -ne '/BEGIN CERTIFICATE-/,/END CERTIFICATE-/p' -ne '/-END CERTIFICATE-/q'
+  register: allow_corporate_mitm_attack_ca_cert
+
+- name: Extract Fingerprint
+  shell: openssl x509 -noout -fingerprint -sha256 -inform pem
+  register: allow_corporate_mitm_attack_fingerprint
+
+- name: Fail if CA cert is the correct cert. If so, this task cannot fetch CA certificate being used to MITM attack us.
+  fail:
+    msg: "MITM attack not detected - we cannot fetch the CA certificate to add to the trust store"
+  when: allow_corporate_mitm_attack_fingerprint.stdout == item
+  with_items: "{{ allow_corporate_mitm_attack_legitimate_google_ca_cert_fingerprints }}"
+
+- name: Fail if CA cert not listed. This is to prevent MITM attacks that we aren't being paid to tolerate for work.
+  block:
+    - name: Detect tolerated MITM cert (1)
+      set_fact:
+        allow_corporate_mitm_attack_cert_known: false
+
+    - name: Detect tolerated MITM cert (2)
+      set_fact:
+        allow_corporate_mitm_attack_cert_known: true
+      when: allow_corporate_mitm_attack_fingerprint.stdout == item
+      with_items: "{{ allow_corporate_mitm_attack_corporate_ca_cert_fingerprints }}"
+
+    - name: Detect tolerated MITM cert (2)
+      fail:
+        msg: "MITM attack cert fingerprint not known. Please verify the cert yourself, then add the fingerprint"
+      when: allow_corporate_mitm_attack_cert_known
+
+- name: Add cert to trust store
+  block:
+    - name: cert dir
+      file:
+        path: /usr/share/ca-certificates/corporate/
+        state: directory
+
+    - name: cert
+      copy:
+        content: "{{ allow_corporate_mitm_attack_ca_cert }}"
+        dest: /usr/share/ca-certificates/corporate/corporate_ca_cert.crt
+
+    - name: list entry
+      lineinfile:
+        path: /etc/ca-certificates.conf
+        line: corporate_ca_cert.crt
+
+    - name: update-ca-certificates
+      shell: update-ca-certificates
+
+- name: Update bashrc (not really sure this is needed, and it breaks azure cli)
+  lineinfile:
+    path: "{{ allow_corporate_mitm_attack_user_home_dir }}/.bashrc"
+    line: "export REQUESTS_CA_BUNDLE=/etc/ssl/certs"

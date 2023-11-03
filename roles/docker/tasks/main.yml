@@ -1,0 +1,15 @@
+---
+
+- name: Use docker convenience script
+  shell: curl -fsSL https://get.docker.com | bash
+
+- name: Install python docker so pip does not complain about PEP668
+  apt:
+    pkg:
+      python3-docker
+
+- name: Add user to group docker
+  user:
+    name: "{{ docker_user }}"
+    groups:
+      - docker

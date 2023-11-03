@@ -1,0 +1,88 @@
+---
+
+- name: System deps
+  apt:
+    pkg:
+      - vim
+      - neovim
+      - jq
+
+- name: Spacevim
+  shell: curl -sLf https://spacevim.org/install.sh | bash
+
+- name: Get latest python version
+  shell: curl -v https://endoflife.date/api/python.json | jq -r '.[0].latest'
+  register: spacevim_latest_python_version_query
+
+- name: Python (for vim)
+  set_fact:
+    spacevim_latest_python_version: "{{ spacevim_latest_python_version_query.stdout }}"
+    spacevim_pyenv_dir: "{{ spacevim_user_home_dir }}/neovim"
+    spacevim_pyenv_virtualenv_line: "{{ spacevim_latest_python_version_query.stdout }}/envs/neovim"
+
+- name: Create python dir for vim
+  block:
+    - file:
+        path: "{{ spacevim_pyenv_dir }}"
+        state: directory
+
+    - shell:
+        chdir: "{{spacevim_pyenv_dir}}"
+        cmd: "pyenv versions --bare --skip-envs --skip-aliases"
+      register: spacevim_pyenv_versions
+
+    - shell:
+        chdir: "{{spacevim_pyenv_dir}}"
+        cmd: "pyenv install {{ spacevim_latest_python_version }}"
+      when: spacevim_latest_python_version not in spacevim_pyenv_versions.stdout_lines
+
+    - shell:
+        chdir: "{{spacevim_pyenv_dir}}"
+        cmd: "pyenv virtualenvs --bare --skip-aliases"
+      register: spacevim_pyenv_virtualenvs
+
+    - shell:
+        chdir: "{{spacevim_pyenv_dir}}"
+        cmd: "pyenv local {{ spacevim_latest_python_version }}"
+
+    - shell:
+        chdir: "{{spacevim_pyenv_dir}}"
+        cmd: "pyenv virtualenv neovim"
+      when: spacevim_pyenv_virtualenv_line not in spacevim_pyenv_virtualenvs.stdout_lines
+
+    - shell:
+        chdir: "{{spacevim_pyenv_dir}}"
+        cmd: "pyenv local neovim"
+
+    - copy:
+        dest: "{{ spacevim_pyenv_dir }}/requirements.txt"
+        content: |
+          pynvim
+          isort
+          flake8
+          black
+          mypy
+          pyright
+          jedi
+
+    - shell:
+        chdir: "{{spacevim_pyenv_dir}}"
+        cmd: pip install -r requirements.txt
+
+- name: Spacevim config
+  copy:
+    src: init.toml
+    dest: "{{ spacevim_user_home_dir }}/.SpaceVim.d/init.toml"
+
+- name: Spacevim autoload dir
+  file:
+    path: "{{ spacevim_user_home_dir }}/.SpaceVim.d/autoload"
+    state: directory
+
+- name: Spacevim autoload
+  copy:
+    src: myspacevim.vim
+    dest: "{{ spacevim_user_home_dir }}/.SpaceVim.d/autoload/myspacevim.vim"
+
+- name: Install plugins
+  shell: nvim --headless +SPUpdate +q

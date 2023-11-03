@@ -1,0 +1,25 @@
+---
+
+- name: Are we in WSL?
+  shell: cat /proc/version
+  register: wsl_dns_fix_proc_version
+
+- name: Fix DNS
+  when: '"wsl_dns_fix_wsl_term" in wsl_dns_fix_proc_version.stdout'
+  block:
+    - name: wsl.conf
+      copy:
+        content: |
+          [network]
+          generateResolvConf = false
+        dest: /etc/wsl.conf
+
+    - name: resolv.conf
+      block:
+        - file:
+            path: /etc/resolv.conf
+            state: absent
+        - copy:
+            dest: /etc/resolv.conf
+            content: |
+              nameserver 8.8.8.8
