@@ -5,7 +5,7 @@
   register: wsl_dns_fix_proc_version
 
 - name: Fix DNS
-  when: '"wsl_dns_fix_wsl_term" in wsl_dns_fix_proc_version.stdout'
+  when: '"WSL" in wsl_dns_fix_proc_version.stdout'
   block:
     - name: wsl.conf
       copy:

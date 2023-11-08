@@ -1,11 +1,17 @@
 ---
 
 - name: System deps
+  become: yes
   apt:
     pkg:
       - vim
       - neovim
       - jq
+
+- name: .config
+  file:
+    path: "{{ spacevim_user_home_dir }}/.config"
+    state: directory
 
 - name: Spacevim
   shell: curl -sLf https://spacevim.org/install.sh | bash
@@ -16,9 +22,10 @@
 
 - name: Python (for vim)
   set_fact:
-    spacevim_latest_python_version: "{{ spacevim_latest_python_version_query.stdout }}"
+    #spacevim_latest_python_version: "{{ spacevim_latest_python_version_query.stdout }}"
+    spacevim_latest_python_version: 3.11.6
     spacevim_pyenv_dir: "{{ spacevim_user_home_dir }}/neovim"
-    spacevim_pyenv_virtualenv_line: "{{ spacevim_latest_python_version_query.stdout }}/envs/neovim"
+    spacevim_pyenv_virtualenv_line: "{{ spacevim_latest_python_version_query.stdout }}/envs/{{ spacevim_virtualenv_name }}"
 
 - name: Create python dir for vim
   block:
@@ -47,12 +54,12 @@
 
     - shell:
         chdir: "{{spacevim_pyenv_dir}}"
-        cmd: "pyenv virtualenv neovim"
+        cmd: "pyenv virtualenv {{ spacevim_virtualenv_name }}"
       when: spacevim_pyenv_virtualenv_line not in spacevim_pyenv_virtualenvs.stdout_lines
 
     - shell:
         chdir: "{{spacevim_pyenv_dir}}"
-        cmd: "pyenv local neovim"
+        cmd: "pyenv local {{ spacevim_virtualenv_name }}"
 
     - copy:
         dest: "{{ spacevim_pyenv_dir }}/requirements.txt"
@@ -70,19 +77,25 @@
         cmd: pip install -r requirements.txt
 
 - name: Spacevim config
-  copy:
-    src: init.toml
-    dest: "{{ spacevim_user_home_dir }}/.SpaceVim.d/init.toml"
+  block:
+    - name: Spacevim config dir
+      file:
+        path: "{{ spacevim_user_home_dir }}/init.toml"
 
-- name: Spacevim autoload dir
-  file:
-    path: "{{ spacevim_user_home_dir }}/.SpaceVim.d/autoload"
-    state: directory
+    - name: Spacevim config
+      template:
+        src: init.toml
+        dest: "{{ spacevim_user_home_dir }}/.SpaceVim.d/init.toml"
 
-- name: Spacevim autoload
-  copy:
-    src: myspacevim.vim
-    dest: "{{ spacevim_user_home_dir }}/.SpaceVim.d/autoload/myspacevim.vim"
+    - name: Spacevim autoload dir
+      file:
+        path: "{{ spacevim_user_home_dir }}/.SpaceVim.d/autoload"
+        state: directory
+
+    - name: Spacevim autoload
+      template:
+        src: myspacevim.vim
+        dest: "{{ spacevim_user_home_dir }}/.SpaceVim.d/autoload/myspacevim.vim"
 
 - name: Install plugins
   shell: nvim --headless +SPUpdate +q

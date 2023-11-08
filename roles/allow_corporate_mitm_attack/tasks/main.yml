@@ -10,7 +10,7 @@
   register: allow_corporate_mitm_attack_ca_cert
 
 - name: Extract Fingerprint
-  shell: openssl x509 -noout -fingerprint -sha256 -inform pem
+  shell: echo "{{ allow_corporate_mitm_attack_ca_cert.stdout }}" | openssl x509 -noout -fingerprint -sha256 -inform pem
   register: allow_corporate_mitm_attack_fingerprint
 
 - name: Fail if CA cert is the correct cert. If so, this task cannot fetch CA certificate being used to MITM attack us.
@@ -45,13 +45,13 @@
 
     - name: cert
       copy:
-        content: "{{ allow_corporate_mitm_attack_ca_cert }}"
+        content: "{{ allow_corporate_mitm_attack_ca_cert.stdout }}"
         dest: /usr/share/ca-certificates/corporate/corporate_ca_cert.crt
 
     - name: list entry
       lineinfile:
         path: /etc/ca-certificates.conf
-        line: corporate_ca_cert.crt
+        line: corporate/corporate_ca_cert.crt
 
     - name: update-ca-certificates
       shell: update-ca-certificates

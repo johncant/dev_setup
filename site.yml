@@ -20,6 +20,7 @@
     allow_corporate_mitm_attack_corporate_ca_cert_fingerprints:
       - "sha256 Fingerprint=01:D5:DE:6E:B5:33:00:EA:20:55:AF:F1:F2:CA:3C:5D:BB:84:D9:6F:A8:A4:CC:58:00:63:CE:AB:A4:D8:57:A6"
     allow_corporate_mitm_attack_user_home_dir: "{{ user_home_dir }}"
+    docker_user: "{{ user_name }}"
   roles:
     - role: wsl_dns_fix
     - role: system_dependencies
@@ -33,7 +34,6 @@
   vars:
     pyenv_user_home_dir: "{{ user_home_dir }}"
     spacevim_user_home_dir: "{{ user_home_dir }}"
-    docker_user: "{{ user_name }}"
   connection: local
   roles:
     - role: pyenv

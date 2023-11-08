@@ -47,7 +47,7 @@ default_height = 30
 
 [[layers]]
 name = "lang#python"
-python_interpreter = '/home/john/.pyenv/versions/neovim/bin/python'
+python_interpreter = '/home/john/.pyenv/versions/{{ spacevim_virtualenv_name }}/bin/python'
 #enabled_linters = ['pylint', 'mypy']
 #enable_typeinfo = true
 

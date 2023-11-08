@@ -8,8 +8,8 @@
 set -ex
 
 setup_ansible() {
-  DEBIAN_FRONTEND=noninteractive apt-get -y update
-  DEBIAN_FRONTEND=noninteractive apt-get -y install python-is-python3 ansible
+  DEBIAN_FRONTEND=noninteractive sudo apt-get -y update
+  DEBIAN_FRONTEND=noninteractive sudo apt-get -y install python-is-python3 ansible
 }
 
 
@@ -22,5 +22,7 @@ setup_using_ansible() {
 }
 
 setup_ansible
-setup_ansible_deps
+
+# Commented, since this is not necessary and will not work until network issues caused by corporate laptop are fixed
+#setup_ansible_deps
 setup_using_ansible
